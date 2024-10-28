@@ -1,0 +1,95 @@
+const createObject = <T extends Record<string, number>>(
+  entries: T,
+): { [K in keyof T]: Uint8Array } =>
+  Object.fromEntries(
+    Object.entries(entries).map((
+      [key, value],
+    ) => [key, new Uint8Array([value])]),
+  ) as { [K in keyof T]: Uint8Array };
+
+export const connectionManagerInstancesEntries = {
+  open_request: 0x01,
+  open_format_rejected: 0x02,
+  open_resource_rejected: 0x03,
+  open_other_rejected: 0x04,
+  close_request: 0x05,
+  close_format_request: 0x06,
+  close_other_request: 0x07,
+  connection_timeout: 0x08,
+};
+
+export const connectionManagerInstances = createObject(
+  connectionManagerInstancesEntries,
+);
+
+export const classCodeEntries = {
+  identityObject: 0x01,
+  messageRouter: 0x02,
+  deviceNet: 0x03,
+  assembly: 0x04,
+  connection: 0x05,
+  connectionManager: 0x06,
+  register: 0x07,
+  discreteInput: 0x08,
+  discreteOutput: 0x09,
+  analogInput: 0x0A,
+  analogOutput: 0x0B,
+  presenceSensing: 0x0E,
+  parameter: 0x0F,
+  parameterGroup: 0x10,
+  group: 0x12,
+  discreteInputGroup: 0x1D,
+  discreteOutputGroup: 0x1E,
+  discreteGroup: 0x1F,
+  analogInputGroup: 0x20,
+  analogOutputGroup: 0x21,
+  analogGroup: 0x22,
+  positionSensor: 0x23,
+  positionControllerSupervisor: 0x24,
+  positionController: 0x25,
+  blockSequencer: 0x26,
+  commandBlock: 0x27,
+  motorData: 0x28,
+  controlSupervisor: 0x29,
+  acDcDrive: 0x2A,
+  acknowledgeHandler: 0x2B,
+  overload: 0x2C,
+  softstart: 0x2D,
+  selection: 0x2E,
+  sDeviceSupervisor: 0x30,
+  sAnalogSensor: 0x31,
+  sAnalogActuator: 0x32,
+  sSingleStageController: 0x33,
+  sGasCalibration: 0x34,
+  tripPoint: 0x35,
+  fileObject: 0x37,
+  sPartialPressure: 0x38,
+  safetySupervisor: 0x39,
+  safetyValidator: 0x3A,
+  safetyDiscreteOutputPoint: 0x3B,
+  safetyDiscreteOutputGroup: 0x3C,
+  safetyDiscreteInputPoint: 0x3D,
+  safetyDiscreteInputGroup: 0x3E,
+  safetyDualChannelOutput: 0x3F,
+  sSensorCalibration: 0x40,
+  eventLog: 0x41,
+  motionAxis: 0x42,
+  timeSync: 0x43,
+  modbus: 0x44,
+  modbusSerialLink: 0x46,
+  symbolObject: 0x6B,
+  templateObject: 0x6C,
+  programName: 0x64, // Rockwell KB# 23341
+  wallClockTime: 0x8B, // Micro800 CIP client messaging quick start
+  controlnet: 0xF0,
+  controlnetKeeper: 0xF1,
+  controlnetScheduling: 0xF2,
+  connectionConfiguration: 0xF3,
+  port: 0xF4,
+  tcpIpInterface: 0xF5,
+  ethernetLink: 0xF6,
+  componetLink: 0xF7,
+  componetRepeater: 0xF8,
+};
+
+export const classCode = createObject(classCodeEntries);
