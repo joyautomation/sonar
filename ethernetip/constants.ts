@@ -17,4 +17,4 @@ export const TRANSPORT_CLASS = new Uint8Array([0xa3]);
 
 export const PROTOCOL_VERSION = encodeUint(1, 2);
 
-export const CONTEXT = encodeString("_sonar__");
+export const CONTEXT = encodeString("_pycomm_");

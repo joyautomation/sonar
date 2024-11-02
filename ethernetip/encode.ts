@@ -1,3 +1,5 @@
+import { bufferToHex } from "./bits.ts";
+
 export const encodeString = (str: string): Uint8Array => {
   const encoder = new TextEncoder();
   return encoder.encode(str);
@@ -37,6 +39,6 @@ export const decodeUint = (value: Uint8Array) => {
     case 4:
       return decoder.getUint32(0, true);
     default:
-      throw new Error(`Unsupported size: ${value.length}`);
+      return value;
   }
 };

@@ -1,10 +1,11 @@
-export function* cycle(stop: number, start: number = 0): Generator<number> {
+export function cycle(stop: number, start: number = 0) {
   let val = start;
-  while (true) {
-    if (val > stop) {
-      val = start;
-    }
-    yield val;
-    val += 1;
-  }
+  return {
+    current: () => val,
+    next: () => {
+      const current = val;
+      val = val > stop ? start : val + 1;
+      return current;
+    },
+  };
 }
