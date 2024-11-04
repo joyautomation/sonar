@@ -38,6 +38,8 @@ export type Cip = {
 };
 
 const registerSession = (cip: Cip) => sendRequest(cip, "registerSession");
+const unregisterSession = (cip: Cip) => sendRequest(cip, "unregisterSession");
+const listIdentity = (cip: Cip) => sendRequest(cip, "listIdentity");
 const getConnectionSize = (cip: Cip) => cip.extendedForwardOpen ? 4000 : 500;
 
 const forwardOpen = async (cip: Cip) => {
@@ -83,7 +85,28 @@ const forwardOpen = async (cip: Cip) => {
   return response;
 };
 
-const createCip = async (ip: string, port: number) => {
+const forwardClose = async (cip: Cip) => {
+  const routePath = encodeEpath(MESSAGE_ROUTER_PATH, true);
+  const message = [
+    PRIORITY,
+    TIMEOUT_TICKS,
+    cip.csn,
+    cip.vid,
+    cip.vsn,
+  ];
+  const response = await sendRequest(cip, "genericUnconnectedRequest", {
+    service: connectionManager.forwardClose,
+    routePath,
+    classCode: classCode.connectionManager,
+    instance: connectionManagerInstances.open_request,
+    requestData: joinBytes(message),
+  });
+  log.info(`Forward close completed.`);
+  cip.targetIsConnected = false;
+  return response;
+};
+
+export const createCip = async (ip: string, port: number) => {
   const socket = await createSocket(ip, port);
   const cip = {
     socket,
@@ -101,16 +124,37 @@ const createCip = async (ip: string, port: number) => {
     vsn: getRandomBytes(4),
   };
   const { session } = await registerSession(cip);
-  log.info(`Received session: ${decodeUint(session)}(${bufferToHex(session)})`);
+  log.info(`Registered session: ${decodeUint(session)}`);
   cip.session = session;
   await forwardOpen(cip);
+  const identity = await listIdentity(cip);
+  log.info(
+    `Partner identified as ${
+      Object.entries({
+        ...identity,
+      }).filter(([k]) =>
+        [
+          "vendor",
+          "productType",
+          "productName",
+        ].includes(
+          k,
+        )
+      ).map(([k, v]) => `${v}`).join(", ")
+    }`,
+  );
   return cip;
 };
 
-const destroyCip = (cip: Awaited<ReturnType<typeof createCip>>) => {
+export const destroyCip = async (
+  cip: Awaited<ReturnType<typeof createCip>>,
+) => {
+  await forwardClose(cip);
+  await unregisterSession(cip);
+  log.info(`Unregistered session: ${decodeUint(cip.session)}`);
+  cip.session = new Uint8Array([0x00]);
   closeSocket(cip.socket);
 };
-
 const createSocket = async (ip: string, port: number) => {
   return await Deno.connect({
     hostname: ip,
@@ -129,19 +173,3 @@ const closeSocket = (socket: Deno.TcpConn) => {
     `Closed connection to ${socket.remoteAddr.hostname}:${socket.remoteAddr.port}`,
   );
 };
-
-const bytesToFloat = (bytes: Uint8Array): number => {
-  const buffer = new Uint8Array(bytes).buffer;
-  const dataView = new DataView(buffer);
-  return dataView.getFloat32(0, true); // true for little-endian
-};
-
-const cip = await createCip("10.3.37.143", 44818);
-const response = await sendRequest(cip, "genericConnectedRequest", {
-  service: new Uint8Array([0x0E]),
-  classCode: new Uint8Array([0x04]),
-  instance: encodeUint(101, 2),
-  attribute: new Uint8Array([0x03]),
-});
-console.log(bytesToFloat(response.data));
-destroyCip(cip);

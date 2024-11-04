@@ -1,9 +1,9 @@
-import { encodeUint } from "./encode.ts";
+import { decodeUint, encodeUint } from "./encode.ts";
 import { bufferToHex, joinBytes } from "./bits.ts";
 
 export type DataType = {
-  encode: (...args: any[]) => Uint8Array;
-  decode?: (...args: any[]) => Uint8Array;
+  encode: (value: any) => Uint8Array;
+  decode?: (value: Uint8Array) => any;
 };
 
 export type Segment = DataType & {

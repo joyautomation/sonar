@@ -30,7 +30,9 @@ export const encodeUint = (value: number, size: number) => {
 };
 
 export const decodeUint = (value: Uint8Array) => {
-  const decoder = new DataView(value.buffer);
+  // Create a copy of the buffer to avoid shared references
+  const buffer = value.slice().buffer;
+  const decoder = new DataView(buffer);
   switch (value.length) {
     case 1:
       return decoder.getUint8(0);
@@ -39,6 +41,6 @@ export const decodeUint = (value: Uint8Array) => {
     case 4:
       return decoder.getUint32(0, true);
     default:
-      return value;
+      return NaN;
   }
 };

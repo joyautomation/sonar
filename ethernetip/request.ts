@@ -2,20 +2,16 @@ import { pipe } from "../utils/pipe.ts";
 import { bufferToHex } from "./bits.ts";
 import { joinBytes } from "./bits.ts";
 import type { Cip } from "./cip.ts";
-import { decodeUint, encodeUint } from "./encode.ts";
+import { decodeString, decodeUint, encodeUint } from "./encode.ts";
 import { encapsulation } from "./services.ts";
+import { PRODUCT_TYPES, VENDORS } from "./status.ts";
 import { buildRequestPath, wrapUnconnectedSend } from "./util.ts";
 
 const readResponse = (socket: Deno.Conn): Promise<Uint8Array> => {
   return new Promise((resolve, reject) => {
     const buffer = new Uint8Array(1024);
     socket.read(buffer).then((bytesRead) => {
-      if (bytesRead === null) {
-        reject(new Error("Connection closed"));
-        return;
-      }
-      const response = buffer.subarray(0, bytesRead);
-      console.log("reply", bufferToHex(response));
+      const response = buffer.subarray(0, bytesRead || 0);
       resolve(response);
     }).catch((error) => {
       reject(error);
@@ -182,7 +178,6 @@ const packetRequestInstances: Record<string, PacketRequestInstance> = {
       cip,
     }) => [cip.protocolVersion, new Uint8Array([0x00, 0x00])],
     parseReply: (raw: Uint8Array) => {
-      console.log("parseReply", typeof raw);
       // const base = baseParseReply(raw); - - - may not be needed
       const session = raw.slice(4, 8);
       return { session };
@@ -199,6 +194,33 @@ const packetRequestInstances: Record<string, PacketRequestInstance> = {
     addressType: null,
     encapCommand: encapsulation.listIdentity,
     buildCommonPacketFormat: () => new Uint8Array(),
+    parseReply: (raw: Uint8Array) => {
+      const data = raw.subarray(26);
+      const productNameLength = decodeUint(data.subarray(36, 37));
+      const result = {
+        ...parseReply(raw),
+        data,
+        encapProtocolVersion: decodeUint(data.subarray(4, 6)),
+        vendor: VENDORS[
+          decodeUint(data.subarray(22, 24)) as keyof typeof VENDORS
+        ],
+        productType: PRODUCT_TYPES[
+          decodeUint(data.subarray(24, 26)) as keyof typeof PRODUCT_TYPES
+        ],
+        productCode: decodeUint(data.subarray(26, 28)),
+        revision: {
+          major: decodeUint(data.subarray(28, 29)),
+          minor: decodeUint(data.subarray(29, 30)),
+        },
+        status: bufferToHex(data.subarray(30, 32)),
+        serial: decodeUint(data.subarray(32, 36)),
+        productName: decodeString(data.subarray(37, 37 + productNameLength)),
+        state: decodeUint(
+          data.subarray(37 + productNameLength, 38 + productNameLength),
+        ),
+      };
+      return result;
+    },
   },
 } as const; // Add 'as const' to preserve literal types
 
